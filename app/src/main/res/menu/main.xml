@@ -1,0 +1,21 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/action_scan"
+        android:showAsAction="always"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="StartScan"/>
+
+    <item
+        android:id="@+id/action_stop"
+        android:icon="@android:drawable/ic_delete"
+        android:showAsAction="ifRoom"
+        android:title="StopScan">
+    </item>
+
+    <item
+        android:id="@+id/action_info"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:showAsAction="ifRoom"
+        android:title="Info">
+    </item>
+</menu>
