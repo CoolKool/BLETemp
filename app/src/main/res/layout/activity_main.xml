@@ -10,18 +10,34 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.ck.bletemp.MainActivity">
 
+    <Button
+        android:id="@+id/buttonFilter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Submit"
+        android:layout_alignParentEnd="true"/>
+
     <EditText
         android:id="@+id/editTextFilter"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="input device address filter here"
+        android:layout_toStartOf="@id/buttonFilter"
+        android:layout_alignBottom="@id/buttonFilter"
+        android:hint="Address Filter"
         android:inputType="text"
         android:labelFor="@+id/editTextFilter" />
+
+    <TextView
+        android:id="@+id/textViewLog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"/>
 
     <ListView
         android:id="@+id/listViewDevices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/editTextFilter"/>
+        android:layout_below="@id/editTextFilter"
+        android:layout_above="@id/textViewLog"/>
 
 </RelativeLayout>
