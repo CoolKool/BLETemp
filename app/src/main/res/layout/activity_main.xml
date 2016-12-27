@@ -10,34 +10,42 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.ck.bletemp.MainActivity">
 
-    <Button
-        android:id="@+id/buttonFilter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Submit"
-        android:layout_alignParentEnd="true"/>
-
-    <EditText
-        android:id="@+id/editTextFilter"
+    <LinearLayout
+        android:id="@+id/linearLayoutFilter"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_toStartOf="@id/buttonFilter"
-        android:layout_alignBottom="@id/buttonFilter"
-        android:hint="Address Filter"
-        android:inputType="text"
-        android:labelFor="@+id/editTextFilter" />
+        android:layout_alignParentBottom="true"
+        android:gravity="bottom"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/editTextFilter"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="5"
+            android:hint="Address Filter"
+            android:inputType="text"
+            android:labelFor="@+id/editTextFilter" />
+
+        <Button
+            android:id="@+id/buttonFilter"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="Filter" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/textViewLog"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"/>
+        android:layout_above="@id/linearLayoutFilter" />
 
     <ListView
         android:id="@+id/listViewDevices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/editTextFilter"
-        android:layout_above="@id/textViewLog"/>
+        android:layout_above="@id/textViewLog"
+        android:layout_alignParentTop="true" />
 
 </RelativeLayout>

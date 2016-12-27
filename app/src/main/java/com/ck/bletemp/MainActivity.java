@@ -13,9 +13,15 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Html;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,6 +34,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.text.DecimalFormat;
 import java.util.Vector;
 
 @TargetApi(23)
@@ -405,12 +412,18 @@ public class MainActivity extends Activity {
                     byte[] raw = new byte[2];
                     raw[0] = upper;
                     raw[1] = lower;
-                    deviceListViewHolder.deviceInfo.setText("Temperature:" + String.valueOf(temperature) + "  raw:0x" + bytesToHexString(raw));
+                    DecimalFormat df = new DecimalFormat("#.00");
+                    SpannableString spannableString = new SpannableString("Temperature:" + df.format(temperature) + "    raw:0x" + bytesToHexString(raw));
+                    spannableString.setSpan(new AbsoluteSizeSpan(25),12,16, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    spannableString.setSpan(new ForegroundColorSpan(Color.RED),12,16,Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    deviceListViewHolder.deviceInfo.setText(spannableString);
                 } else {
                     deviceListViewHolder.deviceInfo.setText("No temperature data");
+                    deviceListViewHolder.deviceInfo.setTextSize(15);
                 }
             } else {
                 deviceListViewHolder.deviceInfo.setText("No temperature data");
+                deviceListViewHolder.deviceInfo.setTextSize(15);
             }
             return convertView;
         }

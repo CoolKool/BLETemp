@@ -27,7 +27,7 @@
     <TextView
         android:id="@+id/textViewDeviceInfo"
         android:text="Device info will print here"
-        android:textSize="15sp"
+        android:textSize="18sp"
         android:layout_below="@id/textViewDeviceName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
