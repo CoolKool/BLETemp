@@ -2,12 +2,12 @@
     <item
         android:id="@+id/action_scan"
         android:showAsAction="always"
-        android:icon="@android:drawable/ic_menu_search"
+        android:icon="@mipmap/pic_view_scan"
         android:title="StartScan"/>
 
     <item
         android:id="@+id/action_stop"
-        android:icon="@android:drawable/ic_delete"
+        android:icon="@mipmap/pic_view_stopscan"
         android:showAsAction="always"
         android:title="StopScan">
     </item>

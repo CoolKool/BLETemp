@@ -10,36 +10,66 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.ck.bletemp.MainActivity">
 
-    <LinearLayout
-        android:id="@+id/linearLayoutFilter"
+    <RelativeLayout
+        android:id="@+id/relativeLayoutFilter"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:gravity="bottom"
-        android:orientation="horizontal">
+        android:layout_alignParentBottom="true">
+
+        <Button
+            android:id="@+id/buttonClearFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:text="Clear"/>
+
+        <Button
+            android:id="@+id/buttonFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/buttonClearFilter"
+            android:layout_alignBottom="@id/buttonClearFilter"
+            android:text="Filter"
+            android:lines="1"/>
 
         <EditText
             android:id="@+id/editTextFilter"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="5"
+            android:layout_toStartOf="@id/buttonFilter"
+            android:layout_alignParentStart="true"
+            android:layout_alignBottom="@id/buttonClearFilter"
             android:hint="Address Filter"
             android:inputType="text"
             android:labelFor="@+id/editTextFilter" />
 
         <Button
-            android:id="@+id/buttonFilter"
-            android:layout_width="0dp"
+            android:id="@+id/buttonHideIrrelevantDevices"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:text="Filter" />
-    </LinearLayout>
+            android:layout_below="@id/buttonFilter"
+            android:layout_alignEnd="@id/buttonClearFilter"
+            android:text="Hide Irrelevant Devices"
+            android:lines="1"
+            android:textSize="12sp"/>
+
+        <TextView
+            android:id="@+id/textViewUsingFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/buttonHideIrrelevantDevices"
+            android:layout_alignParentStart="true"
+            android:layout_alignBaseline="@id/buttonHideIrrelevantDevices"
+            android:text="Using Filter:"
+            android:textSize="12sp"/>
+
+    </RelativeLayout>
 
     <TextView
         android:id="@+id/textViewLog"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@id/linearLayoutFilter" />
+        android:layout_above="@id/relativeLayoutFilter" />
 
     <ListView
         android:id="@+id/listViewDevices"

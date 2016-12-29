@@ -17,7 +17,6 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.Html;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.AbsoluteSizeSpan;
@@ -35,6 +34,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.text.DecimalFormat;
+import java.util.List;
 import java.util.Vector;
 
 @TargetApi(23)
@@ -43,13 +43,17 @@ public class MainActivity extends Activity {
     private final static int REQUEST_ENABLE_BT = 1;
     private final static int REQUEST_PERMISSION_COARSE_LOCATION = 2;
 
-    private final static long SCAN_PERIOD = 5000;
+    private final static long SCAN_PERIOD = 1000;
 
     private volatile boolean allowScan = false;
     private volatile boolean isScanLooping = false;
+    private volatile boolean isHideIrrelevantDevices = false;
 
     EditText editTextFilter;
     Button buttonFilter;
+    Button buttonClearFilter;
+    Button buttonHideIrrelevantDevices;
+    TextView textViewUsingFilter;
     ListView listViewDevices;
     TextView textViewLog;
 
@@ -140,7 +144,7 @@ public class MainActivity extends Activity {
                 @Override
                 public void onScanResult(int callbackType, final ScanResult result) {
                     super.onScanResult(callbackType, result);
-                    Log.i("scanCallBack running", "Thread : " + Thread.currentThread().getId());
+                    //Log.i("scanCallBack running", "Thread : " + Thread.currentThread().getId());
                     runOnUiThread(new Runnable() {
 
                         @Override
@@ -158,6 +162,11 @@ public class MainActivity extends Activity {
                             } else {
                                 bluetoothDeviceContainer = new BluetoothDeviceContainer(result.getDevice(), result.getScanRecord().getBytes());
                             }
+
+                            if (isHideIrrelevantDevices && getIndex(bluetoothDeviceContainer.record) < 0) {
+                                return;
+                            }
+
                             if (bluetoothDeviceContainerVector.contains(bluetoothDeviceContainer)) {
                                 bluetoothDeviceContainerVector.replace(bluetoothDeviceContainer);
                             } else {
@@ -166,6 +175,12 @@ public class MainActivity extends Activity {
                             baseAdapterDevices.notifyDataSetChanged();
                         }
                     });
+                }
+
+                @Override
+                public void onBatchScanResults(List<ScanResult> results) {
+                    super.onBatchScanResults(results);
+                    Log.i("scanCallback","onBatchScanResults has been called");
                 }
 
                 @Override
@@ -178,7 +193,7 @@ public class MainActivity extends Activity {
 
                 @Override
                 public void onLeScan(final BluetoothDevice bluetoothDevice, final int rssi, final byte[] values) {
-                    Log.i("leScanCallBack running", "Thread : " + Thread.currentThread().getId());
+                    //Log.i("leScanCallBack running", "Thread : " + Thread.currentThread().getId());
                     Log.i("device", bluetoothDevice.getAddress() + ": byte[" + values.length + "] : " + bytesToHexString(values));
                     runOnUiThread(new Runnable() {
 
@@ -189,6 +204,11 @@ public class MainActivity extends Activity {
                             }
 
                             BluetoothDeviceContainer bluetoothDeviceContainer = new BluetoothDeviceContainer(bluetoothDevice, values);
+
+                            if (isHideIrrelevantDevices && getIndex(bluetoothDeviceContainer.record) < 0) {
+                                return;
+                            }
+
                             if (bluetoothDeviceContainerVector.contains(bluetoothDeviceContainer)) {
                                 bluetoothDeviceContainerVector.replace(bluetoothDeviceContainer);
                             } else {
@@ -234,9 +254,12 @@ public class MainActivity extends Activity {
         editTextFilter = (EditText) findViewById(R.id.editTextFilter);
         listViewDevices = (ListView) findViewById(R.id.listViewDevices);
         buttonFilter = (Button) findViewById(R.id.buttonFilter);
+        buttonClearFilter = (Button)findViewById(R.id.buttonClearFilter);
+        buttonHideIrrelevantDevices = (Button)findViewById(R.id.buttonHideIrrelevantDevices);
+        textViewUsingFilter = (TextView) findViewById(R.id.textViewUsingFilter);
         textViewLog = (TextView) findViewById(R.id.textViewLog);
 
-        boolean isError = (null == editTextFilter || null == listViewDevices || null == buttonFilter || null == textViewLog);
+        boolean isError = (null == editTextFilter || null == listViewDevices || null == buttonFilter || null == textViewLog || null == buttonHideIrrelevantDevices || null == buttonClearFilter ||null == textViewUsingFilter);
         if (isError) {
             Toast.makeText(this, "UI初始化出错！", Toast.LENGTH_LONG).show();
             finish();
@@ -245,11 +268,43 @@ public class MainActivity extends Activity {
         buttonFilter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stringFilter = editTextFilter.getText().toString();
-                bluetoothDeviceContainerVector.clear();
-                baseAdapterDevices.notifyDataSetChanged();
+                updateFilter();
             }
         });
+
+        buttonClearFilter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editTextFilter.setText("");
+                updateFilter();
+            }
+        });
+
+        buttonHideIrrelevantDevices.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isHideIrrelevantDevices = !isHideIrrelevantDevices;
+                if (isHideIrrelevantDevices) {
+                    buttonHideIrrelevantDevices.setText("Show Irrelevant Devices");
+                } else {
+                    buttonHideIrrelevantDevices.setText("Hide Irrelevant Devices");
+                }
+                bluetoothDeviceContainerVector.clear();
+                baseAdapterDevices.notifyDataSetChanged();
+                stopScan();
+                startScan();
+            }
+        });
+
+    }
+
+    private void updateFilter() {
+        stringFilter = editTextFilter.getText().toString();
+        textViewUsingFilter.setText("Using Filter:" + stringFilter);
+        bluetoothDeviceContainerVector.clear();
+        baseAdapterDevices.notifyDataSetChanged();
+        stopScan();
+        startScan();
     }
 
     @Override
@@ -268,7 +323,7 @@ public class MainActivity extends Activity {
             case R.id.action_stop:
                 if (allowScan = true) {
                     textViewLog.setText("Stopping Scan...");
-                    codeStopScan();
+                    stopScan();
                     allowScan = false;
                 }
                 break;
@@ -298,7 +353,7 @@ public class MainActivity extends Activity {
             return;
         }
         textViewLog.setText("Start Scanning...");
-        isScanLooping = true;
+
         allowScan = true;
         bluetoothDeviceContainerVector.clear();
         baseAdapterDevices.notifyDataSetChanged();
@@ -311,9 +366,10 @@ public class MainActivity extends Activity {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                codeStopScan();
-                codeStartScan();
+                stopScan();
+                startScan();
                 if (allowScan) {
+                    isScanLooping = true;
                     textViewLog.setText("Scanning...");
                     handler.postDelayed(this, SCAN_PERIOD);
                 } else {
@@ -325,7 +381,7 @@ public class MainActivity extends Activity {
         handler.post(runnable);
     }
 
-    private void codeStartScan() {
+    private void startScan() {
         if (!allowScan) {
             return;
         }
@@ -334,7 +390,7 @@ public class MainActivity extends Activity {
             return;
         }
         if (bluetoothAdapter.isDiscovering()) {
-            codeStopScan();
+            stopScan();
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             bluetoothAdapter.getBluetoothLeScanner().startScan(scanCallBack);
@@ -344,7 +400,7 @@ public class MainActivity extends Activity {
     }
 
 
-    private void codeStopScan() {
+    private void stopScan() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             bluetoothAdapter.getBluetoothLeScanner().stopScan(scanCallBack);
         } else {
@@ -354,7 +410,7 @@ public class MainActivity extends Activity {
 
     @Override
     public void finish() {
-        codeStopScan();
+        stopScan();
         allowScan = false;
         super.finish();
     }
@@ -376,7 +432,7 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
+        public View getView(final int position, View convertView, ViewGroup parent) {
             DeviceListViewHolder deviceListViewHolder;
             if (null == convertView) {
                 convertView = getLayoutInflater().inflate(
@@ -398,7 +454,15 @@ public class MainActivity extends Activity {
                 deviceListViewHolder.deviceName.setText("No Name");
             }
             if (null != bluetoothDeviceContainerVector.get(position).bluetoothDevice.getAddress()) {
-                deviceListViewHolder.deviceAddress.setText(bluetoothDeviceContainerVector.get(position).bluetoothDevice.getAddress());
+                final String address = bluetoothDeviceContainerVector.get(position).bluetoothDevice.getAddress();
+                deviceListViewHolder.deviceAddress.setText(address);
+                convertView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        editTextFilter.setText(address);
+                        updateFilter();
+                    }
+                });
             } else {
                 deviceListViewHolder.deviceAddress.setText("--:--:--:--:--:--");
             }
@@ -407,15 +471,17 @@ public class MainActivity extends Activity {
             if (null != (bytes = bluetoothDeviceContainerVector.get(position).record)) {
                 int index = getIndex(bytes);
                 if (index >= 0) {
-                    byte upper = bytes[37], lower = bytes[38];
+                    byte upper = bytes[index], lower = bytes[index + 1];
                     double temperature = (upper & 0x7f) + (lower & 0xff) / 256.0;
+
                     byte[] raw = new byte[2];
                     raw[0] = upper;
                     raw[1] = lower;
                     DecimalFormat df = new DecimalFormat("#.00");
-                    SpannableString spannableString = new SpannableString("Temperature:" + df.format(temperature) + "    raw:0x" + bytesToHexString(raw));
-                    spannableString.setSpan(new AbsoluteSizeSpan(25),12,16, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                    spannableString.setSpan(new ForegroundColorSpan(Color.RED),12,16,Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    SpannableString spannableString = new SpannableString("Temperature:" + df.format(temperature) + "℃    raw:0x" + bytesToHexString(raw));
+
+                    spannableString.setSpan(new AbsoluteSizeSpan(25,true),12,17, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    spannableString.setSpan(new ForegroundColorSpan(Color.RED),12,17,Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                     deviceListViewHolder.deviceInfo.setText(spannableString);
                 } else {
                     deviceListViewHolder.deviceInfo.setText("No temperature data");
@@ -425,21 +491,8 @@ public class MainActivity extends Activity {
                 deviceListViewHolder.deviceInfo.setText("No temperature data");
                 deviceListViewHolder.deviceInfo.setTextSize(15);
             }
-            return convertView;
-        }
 
-        private int getIndex(byte[] bytes) {
-            int len = bytes.length;
-            for (int i = 0; i < len - 1; ) {
-                int packetLen = bytes[i];
-                byte packetType = bytes[i + 1];
-                if ((0x15 == packetLen) && (0xFF == (packetType & 0xFF))) {
-                    return i + 19;
-                } else {
-                    i += (packetLen + 1);
-                }
-            }
-            return -1;
+            return convertView;
         }
 
         class DeviceListViewHolder {
@@ -448,4 +501,27 @@ public class MainActivity extends Activity {
             TextView deviceInfo;
         }
     };
+
+    private int getIndex(byte[] bytes) {
+        if (null == bytes) {
+            return -1;
+        }
+
+        int len = bytes.length;
+
+        if (len < 22 ) {
+            return -1;
+        }
+
+        for (int i = 0; i < len - 1; ) {
+            int packetLen = bytes[i];
+            byte packetType = bytes[i + 1];
+            if ((0x15 == packetLen) && (0xFF == (packetType & 0xFF))) {
+                return i + 20;
+            } else {
+                i += (packetLen + 1);
+            }
+        }
+        return -1;
+    }
 }
