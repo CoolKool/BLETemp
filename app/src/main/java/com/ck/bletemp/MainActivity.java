@@ -14,9 +14,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.AbsoluteSizeSpan;
@@ -42,8 +44,15 @@ public class MainActivity extends Activity {
 
     private final static int REQUEST_ENABLE_BT = 1;
     private final static int REQUEST_PERMISSION_COARSE_LOCATION = 2;
+    private final static int REQUEST_SET_LOCATION = 3;
 
     private final static long SCAN_PERIOD = 1000;
+
+    //define the normal temperature
+    private final static double TEMP_NORMAL_LOW = 36.0;
+    private final static double TEMP_NORMAL_HIGH = 37.0;
+    private final static double TEMP_HIGHER_FEVER = 38.0;
+    private final static double TEMP_HIGHER_BOILED = 39.0;
 
     private volatile boolean allowScan = false;
     private volatile boolean isScanLooping = false;
@@ -229,8 +238,41 @@ public class MainActivity extends Activity {
                     Toast.makeText(this, "Please grant the permission this time", Toast.LENGTH_SHORT).show();
                 }
                 //请求权限
+                Log.i("android 6.0","requesting ACCESS_COARSE_LOCATION");
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_PERMISSION_COARSE_LOCATION);
+            } else {
+                Log.i("android 6.0","ACCESS_COARSE_LOCATION is granted");
             }
+
+            if (!isLocationEnable(this)) {
+                Toast.makeText(this,"请开启位置服务，否则无法搜索到设备！",Toast.LENGTH_LONG).show();
+                Intent locationIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivityForResult(locationIntent, REQUEST_SET_LOCATION);
+            }
+        }
+    }
+
+    public static boolean isLocationEnable(Context context) {
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        boolean networkProvider = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        boolean gpsProvider = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+        return networkProvider || gpsProvider;
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_SET_LOCATION:
+                if (!isLocationEnable(this)) {
+                    Toast.makeText(this,"位置服务没有开启，应用即将退出！",Toast.LENGTH_LONG).show();
+                    finish();
+                }
+                break;
+
+            default:
+                break;
         }
     }
 
@@ -393,16 +435,22 @@ public class MainActivity extends Activity {
             stopScan();
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            bluetoothAdapter.getBluetoothLeScanner().startScan(scanCallBack);
+            if (null!=scanCallBack) {
+                bluetoothAdapter.getBluetoothLeScanner().startScan(scanCallBack);
+            }
         } else {
-            bluetoothAdapter.startLeScan(leScanCallBack);
+            if (null!=leScanCallBack) {
+                bluetoothAdapter.startLeScan(leScanCallBack);
+            }
         }
     }
 
 
     private void stopScan() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            bluetoothAdapter.getBluetoothLeScanner().stopScan(scanCallBack);
+            if (null!=bluetoothAdapter.getBluetoothLeScanner()) {
+                bluetoothAdapter.getBluetoothLeScanner().stopScan(scanCallBack);
+            }
         } else {
             bluetoothAdapter.stopLeScan(leScanCallBack);
         }
@@ -477,11 +525,27 @@ public class MainActivity extends Activity {
                     byte[] raw = new byte[2];
                     raw[0] = upper;
                     raw[1] = lower;
-                    DecimalFormat df = new DecimalFormat("#.00");
-                    SpannableString spannableString = new SpannableString("Temperature:" + df.format(temperature) + "℃    raw:0x" + bytesToHexString(raw));
+                    DecimalFormat df = new DecimalFormat("#0.00");
+                    String stringTemperature;
+                    if ((upper&0x80) == 0) {
+                        stringTemperature = df.format(temperature);
+                    } else {
+                        stringTemperature = "Error";
+                    }
 
-                    spannableString.setSpan(new AbsoluteSizeSpan(25,true),12,17, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                    spannableString.setSpan(new ForegroundColorSpan(Color.RED),12,17,Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    SpannableString spannableString = new SpannableString("Temperature:" + stringTemperature + "℃    raw:0x" + bytesToHexString(raw));
+
+                    spannableString.setSpan(new AbsoluteSizeSpan(25,true),12,12 + stringTemperature.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    if (temperature < TEMP_NORMAL_LOW ) {
+                        spannableString.setSpan(new ForegroundColorSpan(Color.BLUE),12,12 + stringTemperature.length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    } else if (temperature <= TEMP_NORMAL_HIGH){
+                        spannableString.setSpan(new ForegroundColorSpan(Color.GREEN),12,12 + stringTemperature.length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    } else if (temperature <= TEMP_HIGHER_FEVER) {
+                        spannableString.setSpan(new ForegroundColorSpan(Color.YELLOW),12,12 + stringTemperature.length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    } else if (temperature >= TEMP_HIGHER_BOILED) {
+                        spannableString.setSpan(new ForegroundColorSpan(Color.RED),12,12 + stringTemperature.length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    }
+
                     deviceListViewHolder.deviceInfo.setText(spannableString);
                 } else {
                     deviceListViewHolder.deviceInfo.setText("No temperature data");
