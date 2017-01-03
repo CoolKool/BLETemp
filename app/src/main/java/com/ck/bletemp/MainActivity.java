@@ -542,8 +542,11 @@ public class MainActivity extends Activity {
                         spannableString.setSpan(new ForegroundColorSpan(Color.GREEN),12,12 + stringTemperature.length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                     } else if (temperature <= TEMP_HIGHER_FEVER) {
                         spannableString.setSpan(new ForegroundColorSpan(Color.YELLOW),12,12 + stringTemperature.length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                    } else if (temperature >= TEMP_HIGHER_BOILED) {
+                    } else{
                         spannableString.setSpan(new ForegroundColorSpan(Color.RED),12,12 + stringTemperature.length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    }
+                    if (temperature >= TEMP_HIGHER_BOILED) {
+                        deviceListViewHolder.deviceInfo.setBackgroundColor(Color.GRAY);
                     }
 
                     deviceListViewHolder.deviceInfo.setText(spannableString);
