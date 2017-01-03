@@ -547,6 +547,8 @@ public class MainActivity extends Activity {
                     }
                     if (temperature >= TEMP_HIGHER_BOILED) {
                         deviceListViewHolder.deviceInfo.setBackgroundColor(Color.GRAY);
+                    }else {
+                        deviceListViewHolder.deviceInfo.setBackgroundColor(Color.TRANSPARENT);
                     }
 
                     deviceListViewHolder.deviceInfo.setText(spannableString);
